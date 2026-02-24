@@ -16,7 +16,10 @@
 
 package pkg
 
+// ComponentDTO is the standard input structure for component operations across all services.
 type ComponentDTO struct {
-	Purl        string `json:"purl"`
+	// Purl is the Package URL identifying the component (e.g., "pkg:github/scanoss/scanner.c").
+	Purl string `json:"purl"`
+	// Requirement is an optional version constraint (e.g., ">=1.0.0", "^2.3.0").
 	Requirement string `json:"requirement,omitempty"`
 }

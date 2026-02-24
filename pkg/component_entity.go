@@ -18,9 +18,14 @@ package pkg
 
 import "github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
 
+// Component represents the component entity used across all services.
 type Component struct {
-	Purl        string `json:"purl"`
+	// Purl is the Package URL identifying the component.
+	Purl string `json:"purl"`
+	// Requirement is the version constraint used to resolve the component.
 	Requirement string `json:"requirement,omitempty"`
-	Version     string `json:"version,omitempty"`
-	Status      domain.ComponentStatus
+	// Version is the resolved concrete version after processing.
+	Version string `json:"version,omitempty"`
+	// Status indicates the outcome of the resolution (e.g., success, not found, invalid purl).
+	Status domain.ComponentStatus
 }

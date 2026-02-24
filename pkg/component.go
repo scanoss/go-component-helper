@@ -23,12 +23,19 @@ import (
 	"sync"
 )
 
+// ComponentVersionCfg holds the configuration for resolving component versions.
 type ComponentVersionCfg struct {
+	// MaxWorkers is the maximum number of concurrent goroutines used to resolve versions.
+	// If <= 0, defaults to MaxWorkers (5).
 	MaxWorkers int
-	Ctx        context.Context
-	S          *zap.SugaredLogger
-	DB         *sqlx.DB
-	Input      []ComponentDTO
+	// Ctx is the context used for cancellation and deadline propagation.
+	Ctx context.Context
+	// S is the sugared logger for structured logging.
+	S *zap.SugaredLogger
+	// DB is the database connection used to query component data.
+	DB *sqlx.DB
+	// Input is the list of components whose versions need to be resolved.
+	Input []ComponentDTO
 }
 
 const MaxWorkers = 5

@@ -23,6 +23,9 @@ import (
 	"strings"
 )
 
+// sanitizeComponents validates and normalizes a list of ComponentDTOs into Components.
+// It checks for empty or invalid PURLs, extracts version constraints from the PURL when
+// the requirement is missing, and moves semver operators from the version to the requirement.
 func sanitizeComponents(componentDTOs []ComponentDTO) []Component {
 	var components []Component
 	for _, dto := range componentDTOs {
