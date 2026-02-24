@@ -27,8 +27,10 @@ import (
 	"regexp"
 )
 
+// operatorRegex matches semver range operators (>=, <=, ~, >, <) at the start of a string.
 var operatorRegex = regexp.MustCompile(`^(>=|<=|~|>|<)`)
 
+// HasSemverOperator reports whether the given version string starts with a semver range operator.
 func HasSemverOperator(version string) bool {
 	return operatorRegex.MatchString(version)
 }

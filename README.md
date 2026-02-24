@@ -8,12 +8,7 @@ The main function in this package is `GetComponentsVersion`. It takes a list of 
 
 ```go
 import (
-<<<<<<< Updated upstream
-    componenthelper "github.com/scanoss/go-component-helper/pkg"
-    "github.com/scanoss/go-component-helper/pkg/dtos"
-=======
     componenthelper "github.com/scanoss/go-component-helper/componenthelper"
->>>>>>> Stashed changes
 )
 
 results := componenthelper.GetComponentsVersion(componenthelper.ComponentVersionCfg{
@@ -21,7 +16,7 @@ results := componenthelper.GetComponentsVersion(componenthelper.ComponentVersion
     Ctx:        ctx,
     S:          logger,
     DB:         db,
-    Input: []dtos.ComponentDTO{
+    Input: []componenthelper.ComponentDTO{
         {Purl: "pkg:npm/lodash", Requirement: ">=4.17.0"},
         {Purl: "pkg:github/scanoss/scanner.c@1.2.3"},
     },

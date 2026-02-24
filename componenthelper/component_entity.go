@@ -27,19 +27,14 @@ import (
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
 )
 
-<<<<<<< Updated upstream
-// componentResolver abstracts the component lookup operations used by the worker.
-type componentResolver interface {
-	CheckPurl(ctx context.Context, purl string) (int, error)
-	GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
-}
-
-=======
 // Component represents the component entity used across all services.
->>>>>>> Stashed changes
 type Component struct {
-	Purl        string `json:"purl"`
+	// Purl is the Package URL identifying the component.
+	Purl string `json:"purl"`
+	// Requirement is the version constraint used to resolve the component.
 	Requirement string `json:"requirement,omitempty"`
-	Version     string `json:"version,omitempty"`
-	Status      domain.ComponentStatus
+	// Version is the resolved concrete version after processing.
+	Version string `json:"version,omitempty"`
+	// Status indicates the outcome of the resolution (e.g., success, not found, invalid purl).
+	Status domain.ComponentStatus
 }
