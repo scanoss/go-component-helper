@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Upcoming changes...
+
+## [0.1.0] - 2026-02-25
 ### Added
 - Added `GetComponentsVersion` function to resolve concrete versions for a list of components using a fan-out/fan-in concurrency pattern
 - Added `sanitiseComponents` to validate and normalise component PURLs (empty purl detection, invalid purl handling, semver operator extraction)
