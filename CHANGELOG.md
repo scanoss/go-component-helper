@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Upcoming changes...
 
+## [0.2.0] - 2026-03-09
+### Changed
+- Upgraded `go-models` to v0.6.0 to improve component search accuracy
+
 ## [0.1.0] - 2026-02-25
 ### Added
 - Added `GetComponentsVersion` function to resolve concrete versions for a list of components using a fan-out/fan-in concurrency pattern
@@ -19,3 +23,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added project scaffolding (LICENSE, CODE_OF_CONDUCT, CONTRIBUTING, Makefile, README)
 
 [0.1.0]: https://github.com/scanoss/go-component-helper/tag/v0.1.0
+[0.2.0]: https://github.com/scanoss/go-component-helper/compare/v0.1.0...v0.2.0
