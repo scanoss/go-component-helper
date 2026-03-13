@@ -24,12 +24,18 @@
 package componenthelper
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/scanoss/go-component-helper/componenthelper/utils"
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
 	purlhelper "github.com/scanoss/go-purl-helper/pkg"
 )
+
+var pkgRegex = regexp.MustCompile(`^pkg:(?P<type>\w+)/(?P<name>.+)$`) // regex to parse purl name from purl string
+var typeRegex = regexp.MustCompile(`^(npm|nuget)$`)                   // regex to parse purl types that should not be lower cased
+var vRegex = regexp.MustCompile(`^(=|==|)(?P<name>\w+\S+)$`)
 
 // sanitiseComponents validates and normalises a list of ComponentDTO into Components.
 // It checks for empty or invalid PURLs, extracts version constraints from the PURL when
@@ -55,8 +61,9 @@ func sanitiseComponents(componentDTOs []ComponentDTO) []Component {
 			dto.Requirement = purlParts[1]
 			dto.Purl = purlParts[0]
 		}
-		_, err := purlhelper.PurlFromString(dto.Purl)
+		packageURL, err := purlhelper.PurlFromString(dto.Purl)
 		if err != nil {
+			s.Warnf("Failed to parse PURL %q (requirement: %q): %v", dto.Purl, dto.Requirement, err)
 			components = append(components, Component{
 				Purl:        dto.Purl,
 				Requirement: dto.Requirement,
@@ -71,6 +78,39 @@ func sanitiseComponents(componentDTOs []ComponentDTO) []Component {
 			dto.Purl = purlParts[0]
 			dto.Requirement = purlParts[1]
 		}
+		qualifiers := make(map[string]string, len(packageURL.Qualifiers))
+		for _, q := range packageURL.Qualifiers {
+			qualifiers[q.Key] = q.Value
+		}
+
+		componentName, err := ComponentNameFromString(dto.Purl)
+		if err != nil {
+			s.Warnf("Failed to extract component name from PURL %q (requirement: %q): %v", dto.Purl, dto.Requirement, err)
+			components = append(components, Component{
+				Purl:        dto.Purl,
+				Requirement: dto.Requirement,
+				Status: domain.ComponentStatus{
+					Message:    "Invalid Purl",
+					StatusCode: domain.InvalidPurl,
+				},
+			})
+			continue
+		}
+
+		URL, err := purlhelper.ProjectUrl(componentName, packageURL.Type)
+		if err != nil {
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+			fmt.Errorf("Problem encountered extracting URLs for: %v, %v - %v.", dto.Purl, dto.Requirement, err)
+=======
+			s.Warnf("Problem encountered extracting URLs for: %v, %v - %v.", dto.Purl, dto.Requirement, err)
+=======
+			s.Warnf("Failed to derive project URL for PURL %q (requirement: %q): %v. URL will be empty.", dto.Purl, dto.Requirement, err)
+>>>>>>> Stashed changes
+			URL = ""
+>>>>>>> Stashed changes
+		}
+
 		components = append(components, Component{
 			Requirement: dto.Requirement,
 			Purl:        dto.Purl,
@@ -78,7 +118,36 @@ func sanitiseComponents(componentDTOs []ComponentDTO) []Component {
 				Message:    "",
 				StatusCode: domain.Success,
 			},
+			PurlType:       packageURL.Type,
+			PurlName:       packageURL.Name,
+			PurlQualifiers: qualifiers,
+			PurlNamespace:  packageURL.Namespace,
+			PurlSubpath:    packageURL.Subpath,
+			Name:           componentName,
+			URL:            URL,
 		})
 	}
 	return components
+}
+
+// ComponentNameFromString take an input Purl string and returns the component name only
+func ComponentNameFromString(purlString string) (string, error) {
+	if len(purlString) == 0 {
+		return "", fmt.Errorf("no purl string supplied to parse")
+	}
+	matches := pkgRegex.FindStringSubmatch(purlString)
+	if len(matches) > 0 {
+		ti := pkgRegex.SubexpIndex("type")
+		ni := pkgRegex.SubexpIndex("name")
+		if ni >= 0 {
+			// Remove any version@/subpath?/qualifiers# info from the PURL
+			pn := strings.Split(strings.Split(strings.Split(matches[ni], "@")[0], "?")[0], "#")[0]
+			// Lowercase the purl name if it's not on the exclusion list (defined in the regex)
+			if ti >= 0 && !typeRegex.MatchString(matches[ti]) {
+				pn = strings.ToLower(pn)
+			}
+			return pn, nil
+		}
+	}
+	return "", fmt.Errorf("no purl name found in '%v'", purlString)
 }

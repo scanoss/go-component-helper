@@ -45,10 +45,17 @@ func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver 
 	defer wg.Done()
 	for j := range jobs {
 		processedComponent := Component{
-			Purl:        j.Purl,
-			Requirement: j.Requirement,
-			Version:     j.Version,
-			Status:      j.Status,
+			Purl:           j.Purl,
+			Requirement:    j.Requirement,
+			Version:        j.Version,
+			Name:           j.Name,
+			Status:         j.Status,
+			PurlType:       j.PurlType,
+			PurlSubpath:    j.PurlSubpath,
+			PurlNamespace:  j.PurlNamespace,
+			PurlQualifiers: j.PurlQualifiers,
+			PurlName:       j.PurlName,
+			URL:            j.URL,
 		}
 
 		if processedComponent.Status.StatusCode != domain.Success {
