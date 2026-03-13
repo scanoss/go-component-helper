@@ -26,6 +26,7 @@ package componenthelper
 import (
 	"context"
 	"errors"
+	"github.com/scanoss/go-models/pkg/services"
 	"sync"
 	"testing"
 
@@ -36,12 +37,7 @@ import (
 )
 
 type mockComponentResolver struct {
-	checkPurlFn    func(ctx context.Context, purl string) (int, error)
 	getComponentFn func(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
-}
-
-func (m *mockComponentResolver) CheckPurl(ctx context.Context, purl string) (int, error) {
-	return m.checkPurlFn(ctx, purl)
 }
 
 func (m *mockComponentResolver) GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error) {
@@ -290,9 +286,6 @@ func TestComponentVersionWorker_ComponentResolverSuccess(t *testing.T) {
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
 			mock: &mockComponentResolver{
-				checkPurlFn: func(_ context.Context, _ string) (int, error) {
-					return 1, nil
-				},
 				getComponentFn: func(_ context.Context, _ types.ComponentRequest) (types.ComponentResponse, error) {
 					return types.ComponentResponse{Version: "4.17.21"}, nil
 				},
@@ -309,9 +302,6 @@ func TestComponentVersionWorker_ComponentResolverSuccess(t *testing.T) {
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
 			mock: &mockComponentResolver{
-				checkPurlFn: func(_ context.Context, _ string) (int, error) {
-					return 1, nil
-				},
 				getComponentFn: func(_ context.Context, _ types.ComponentRequest) (types.ComponentResponse, error) {
 					return types.ComponentResponse{Version: ""}, nil
 				},
@@ -375,8 +365,8 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
 			mock: &mockComponentResolver{
-				checkPurlFn: func(_ context.Context, _ string) (int, error) {
-					return 0, nil
+				getComponentFn: func(_ context.Context, _ types.ComponentRequest) (types.ComponentResponse, error) {
+					return types.ComponentResponse{}, errors.New("component not found")
 				},
 			},
 			expectedStatus:  domain.ComponentNotFound,
@@ -390,8 +380,8 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
 			mock: &mockComponentResolver{
-				checkPurlFn: func(_ context.Context, _ string) (int, error) {
-					return 0, errors.New("db connection failed")
+				getComponentFn: func(_ context.Context, _ types.ComponentRequest) (types.ComponentResponse, error) {
+					return types.ComponentResponse{}, errors.New("component not found")
 				},
 			},
 			expectedStatus:  domain.ComponentNotFound,
@@ -405,11 +395,8 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
 			mock: &mockComponentResolver{
-				checkPurlFn: func(_ context.Context, _ string) (int, error) {
-					return 1, nil
-				},
 				getComponentFn: func(_ context.Context, _ types.ComponentRequest) (types.ComponentResponse, error) {
-					return types.ComponentResponse{}, errors.New("version not found")
+					return types.ComponentResponse{}, services.ErrVersionNotFound
 				},
 			},
 			expectedStatus:  domain.VersionNotFound,
@@ -423,8 +410,8 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
 			mock: &mockComponentResolver{
-				checkPurlFn: func(_ context.Context, _ string) (int, error) {
-					return -1, nil
+				getComponentFn: func(_ context.Context, _ types.ComponentRequest) (types.ComponentResponse, error) {
+					return types.ComponentResponse{}, errors.New("component not found")
 				},
 			},
 			expectedStatus:  domain.ComponentNotFound,
@@ -438,9 +425,6 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
 			mock: &mockComponentResolver{
-				checkPurlFn: func(_ context.Context, _ string) (int, error) {
-					return 1, nil
-				},
 				getComponentFn: func(_ context.Context, _ types.ComponentRequest) (types.ComponentResponse, error) {
 					return types.ComponentResponse{}, nil
 				},

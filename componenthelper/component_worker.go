@@ -25,6 +25,8 @@ package componenthelper
 
 import (
 	"context"
+	"errors"
+	"github.com/scanoss/go-models/pkg/services"
 	"sync"
 
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
@@ -34,7 +36,6 @@ import (
 
 // componentResolver abstracts the component lookup operations used by the worker.
 type componentResolver interface {
-	CheckPurl(ctx context.Context, purl string) (int, error)
 	GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
 }
 
@@ -44,11 +45,19 @@ type componentResolver interface {
 func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver componentResolver, jobs chan Component, results chan Component, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for j := range jobs {
+
 		processedComponent := Component{
-			Purl:        j.Purl,
-			Requirement: j.Requirement,
-			Version:     j.Version,
-			Status:      j.Status,
+			Purl:           j.Purl,
+			Requirement:    j.Requirement,
+			Version:        j.Version,
+			Name:           j.Name,
+			Status:         j.Status,
+			PurlType:       j.PurlType,
+			PurlSubpath:    j.PurlSubpath,
+			PurlNamespace:  j.PurlNamespace,
+			PurlQualifiers: j.PurlQualifiers,
+			PurlName:       j.PurlName,
+			URL:            j.URL,
 		}
 
 		if processedComponent.Status.StatusCode != domain.Success {
@@ -56,26 +65,31 @@ func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver 
 			continue
 		}
 
-		// Check PURL exists
-		count, err := resolver.CheckPurl(ctx, j.Purl)
-		if count <= 0 || err != nil {
-			s.Warnf("Purl doesn't exist: %s", j.Purl)
-			processedComponent.Status.StatusCode = domain.ComponentNotFound
-			processedComponent.Status.Message = "Component not found"
-			results <- processedComponent
-			continue
-		}
-
 		// Set by default version = requirement
 		var component types.ComponentResponse
-		component, err = resolver.GetComponent(ctx, types.ComponentRequest{
+		component, err := resolver.GetComponent(ctx, types.ComponentRequest{
 			Purl:        j.Purl,
 			Requirement: j.Requirement,
 		})
+
 		if err != nil {
-			s.Warnf("Failed to get component version: %s, %s", j.Purl, j.Requirement)
-			processedComponent.Status.StatusCode = domain.VersionNotFound
-			processedComponent.Status.Message = "Component version not found"
+			if errors.Is(err, services.ErrComponentNotFound) {
+				s.Warnf("Purl doesn't exist: %s, %v", j.Purl, err)
+				processedComponent.Status.StatusCode = domain.ComponentNotFound
+				processedComponent.Status.Message = "Component not found"
+				results <- processedComponent
+				continue
+			}
+			if errors.Is(err, services.ErrVersionNotFound) {
+				s.Warnf("Failed to get component version: %s, %s", j.Purl, j.Requirement)
+				processedComponent.Status.StatusCode = domain.VersionNotFound
+				processedComponent.Status.Message = "Component version not found"
+				results <- processedComponent
+				continue
+			}
+			s.Errorf("Failed to get component: %s, %s, %v", j.Purl, j.Requirement, err)
+			processedComponent.Status.StatusCode = domain.ComponentNotFound
+			processedComponent.Status.Message = "Component not found"
 			results <- processedComponent
 			continue
 		}

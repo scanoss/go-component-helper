@@ -6,7 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Upcoming changes...
+### Added
+- Added PURL component properties (`PurlType`, `PurlName`, `PurlNamespace`, `PurlQualifiers`, `PurlSubpath`, `Name`, `URL`) to `Component` struct
+- Added `ComponentNameFromString` function to extract the full component name (namespace + name) from a PURL string
+
+### Changed
+- Replaced `CheckPurl` + `GetComponent` flow with single `GetComponent` call using sentinel errors (`ErrComponentNotFound`, `ErrVersionNotFound`) for error handling
 
 ## [0.2.0] - 2026-03-09
 ### Changed
