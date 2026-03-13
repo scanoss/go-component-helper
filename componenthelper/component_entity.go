@@ -35,6 +35,20 @@ type Component struct {
 	Requirement string `json:"requirement,omitempty"`
 	// Version is the resolved concrete version after processing.
 	Version string `json:"version,omitempty"`
-	// Status indicates the outcome of the resolution (e.g., success, not found, invalid purl).
+	// Name namespace + name
+	Name string `json:"component_name,omitempty"`
+	// URL component URL
+	URL string `json:"url,omitempty"`
+	// PurlType is the package type (e.g., "golang", "npm", "maven").
+	PurlType string `json:"purl_type,omitempty"`
+	// PurlName is the package name.
+	PurlName string `json:"purl_name,omitempty"`
+	// PurlNamespace is the package namespace (e.g., "github.com/scanoss").
+	PurlNamespace string `json:"purl_namespace,omitempty"`
+	// PurlQualifiers holds key-value pairs for extra qualifying data.
+	PurlQualifiers map[string]string `json:"purl_qualifiers,omitempty"`
+	// PurlSubpath is the subpath within the package.
+	PurlSubpath string `json:"purl_subpath,omitempty"`
+	//Component Status
 	Status domain.ComponentStatus
 }
