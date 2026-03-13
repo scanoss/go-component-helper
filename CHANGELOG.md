@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added PURL component properties (`PurlType`, `PurlName`, `PurlNamespace`, `PurlQualifiers`, `PurlSubpath`, `Name`, `URL`) to `Component` struct
 - Added `ComponentNameFromString` function to extract the full component name (namespace + name) from a PURL string
 
+### Changed
+- Replaced `CheckPurl` + `GetComponent` flow with single `GetComponent` call using sentinel errors (`ErrComponentNotFound`, `ErrVersionNotFound`) for error handling
+
 ## [0.2.0] - 2026-03-09
 ### Changed
 - Upgraded `go-models` to v0.6.0 to improve component search accuracy
