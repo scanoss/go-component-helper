@@ -26,10 +26,10 @@ package componenthelper
 import (
 	"context"
 	"errors"
-	"github.com/scanoss/go-models/pkg/services"
 	"sync"
 
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
+	"github.com/scanoss/go-models/pkg/services"
 	"github.com/scanoss/go-models/pkg/types"
 	"go.uber.org/zap"
 )
@@ -45,7 +45,6 @@ type componentResolver interface {
 func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver componentResolver, jobs chan Component, results chan Component, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for j := range jobs {
-
 		processedComponent := Component{
 			Purl:           j.Purl,
 			Requirement:    j.Requirement,

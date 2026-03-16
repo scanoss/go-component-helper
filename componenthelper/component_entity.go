@@ -49,6 +49,6 @@ type Component struct {
 	PurlQualifiers map[string]string `json:"purl_qualifiers,omitempty"`
 	// PurlSubpath is the subpath within the package.
 	PurlSubpath string `json:"purl_subpath,omitempty"`
-	//Component Status
+	// Component Status
 	Status domain.ComponentStatus
 }

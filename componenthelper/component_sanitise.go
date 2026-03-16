@@ -31,16 +31,16 @@ import (
 	"github.com/scanoss/go-component-helper/componenthelper/utils"
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
 	purlhelper "github.com/scanoss/go-purl-helper/pkg"
+	"go.uber.org/zap"
 )
 
 var pkgRegex = regexp.MustCompile(`^pkg:(?P<type>\w+)/(?P<name>.+)$`) // regex to parse purl name from purl string
 var typeRegex = regexp.MustCompile(`^(npm|nuget)$`)                   // regex to parse purl types that should not be lower cased
-var vRegex = regexp.MustCompile(`^(=|==|)(?P<name>\w+\S+)$`)
 
 // sanitiseComponents validates and normalises a list of ComponentDTO into Components.
 // It checks for empty or invalid PURLs, extracts version constraints from the PURL when
 // the requirement is missing, and moves semver operators from the version to the requirement.
-func sanitiseComponents(componentDTOs []ComponentDTO) []Component {
+func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Component {
 	var components []Component
 	for _, dto := range componentDTOs {
 		// Check for empty purl
@@ -99,16 +99,8 @@ func sanitiseComponents(componentDTOs []ComponentDTO) []Component {
 
 		URL, err := purlhelper.ProjectUrl(componentName, packageURL.Type)
 		if err != nil {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-			fmt.Errorf("Problem encountered extracting URLs for: %v, %v - %v.", dto.Purl, dto.Requirement, err)
-=======
-			s.Warnf("Problem encountered extracting URLs for: %v, %v - %v.", dto.Purl, dto.Requirement, err)
-=======
 			s.Warnf("Failed to derive project URL for PURL %q (requirement: %q): %v. URL will be empty.", dto.Purl, dto.Requirement, err)
->>>>>>> Stashed changes
 			URL = ""
->>>>>>> Stashed changes
 		}
 
 		components = append(components, Component{
@@ -130,7 +122,7 @@ func sanitiseComponents(componentDTOs []ComponentDTO) []Component {
 	return components
 }
 
-// ComponentNameFromString take an input Purl string and returns the component name only
+// ComponentNameFromString take an input Purl string and returns the component name only.
 func ComponentNameFromString(purlString string) (string, error) {
 	if len(purlString) == 0 {
 		return "", fmt.Errorf("no purl string supplied to parse")
