@@ -74,10 +74,8 @@ github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/scanoss/go-grpc-helper v0.13.0 h1:GtKDKuc2jTtv27naIVF3f095tuJvSvxbeN+HmUdBS4Y=
 github.com/scanoss/go-grpc-helper v0.13.0/go.mod h1:mNfM/788jzo8rQ2K2Y97UYQPd6MjuVXEM7r05kWPOJc=
-github.com/scanoss/go-models v0.5.1 h1:MdHRhQcjG6sz5BLbyWfu/+jfH7I4Snnpo9XriukB7GI=
-github.com/scanoss/go-models v0.5.1/go.mod h1:7r2ylOddgwMx8uAf7dvYBiThiU5eeVwHVvVgsVHtn3Q=
-github.com/scanoss/go-models v0.6.0 h1:J/vp9kmeYXy3S/lTGuOKoVOrYGpmFQMuHlDxHpmGU0g=
-github.com/scanoss/go-models v0.6.0/go.mod h1:gkXP2/3ZUn8IyH/z/528aTcWZ2mzlzsXiY4bzBbrM+o=
+github.com/scanoss/go-models v0.7.0 h1:6uhr3sGWIFz3wb1k+nhFfEoGbR8n5e5q3kJGJuLqdPc=
+github.com/scanoss/go-models v0.7.0/go.mod h1:gkXP2/3ZUn8IyH/z/528aTcWZ2mzlzsXiY4bzBbrM+o=
 github.com/scanoss/go-purl-helper v0.2.1 h1:jp960a585ycyJSlqZky1NatMJBIQi/JGITDfNSu/9As=
 github.com/scanoss/go-purl-helper v0.2.1/go.mod h1:v20/bKD8G+vGrILdiq6r0hyRD2bO8frCJlu9drEcQ38=
 github.com/scanoss/papi v0.30.0 h1:4o1iSW/ee7VCPSe5a1MV6zUjvZj+5chaL2OwX4NCeZE=
