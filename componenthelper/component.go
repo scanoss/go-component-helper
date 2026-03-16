@@ -53,7 +53,7 @@ const MaxWorkers = 5
 // concurrency pattern. It spawns up to MaxWorkers goroutines (capped by the number of components)
 // to query versions in parallel, then collects and returns the results.
 func GetComponentsVersion(config ComponentVersionCfg) []Component {
-	sanitisedComponents := sanitiseComponents(config.Input)
+	sanitisedComponents := sanitiseComponents(config.S, config.Input)
 	numJobs := len(sanitisedComponents)
 	jobs := make(chan Component, numJobs)
 	results := make(chan Component, numJobs)

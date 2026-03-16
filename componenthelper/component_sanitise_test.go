@@ -24,12 +24,22 @@
 package componenthelper
 
 import (
+	"context"
 	"testing"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
+	zlog "github.com/scanoss/zap-logging-helper/pkg/logger"
 )
 
 func TestSanitiseComponents(t *testing.T) {
+	err := zlog.NewSugaredDevLogger()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a sugared logger", err)
+	}
+	defer zlog.SyncZap()
+	ctx := ctxzap.ToContext(context.Background(), zlog.L)
+	s := ctxzap.Extract(ctx).Sugar()
 	tests := []struct {
 		name           string
 		components     []ComponentDTO
@@ -82,7 +92,7 @@ func TestSanitiseComponents(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := sanitiseComponents(tt.components)
+			result := sanitiseComponents(s, tt.components)
 
 			if len(result) != len(tt.expectedStatus) {
 				t.Fatalf("expected %d components, got %d", len(tt.expectedStatus), len(result))

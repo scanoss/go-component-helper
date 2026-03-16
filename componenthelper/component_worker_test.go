@@ -26,12 +26,12 @@ package componenthelper
 import (
 	"context"
 	"errors"
-	"github.com/scanoss/go-models/pkg/services"
 	"sync"
 	"testing"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
+	"github.com/scanoss/go-models/pkg/services"
 	"github.com/scanoss/go-models/pkg/types"
 	zlog "github.com/scanoss/zap-logging-helper/pkg/logger"
 )
