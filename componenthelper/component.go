@@ -52,6 +52,10 @@ const MaxWorkers = 5
 // GetComponentsVersion resolves the concrete version for each component using a fan-out/fan-in
 // concurrency pattern. It spawns up to MaxWorkers goroutines (capped by the number of components)
 // to query versions in parallel, then collects and returns the results.
+//
+// Important: during sanitisation, if the input PURL contains a version (e.g., pkg:pypi/gtest@1.17.0),
+// the version is extracted and moved to the Requirement field, overwriting any existing requirement.
+// The PURL is then stored without the version (e.g., pkg:pypi/gtest).
 func GetComponentsVersion(config ComponentVersionCfg) []Component {
 	sanitisedComponents := sanitiseComponents(config.S, config.Input)
 	numJobs := len(sanitisedComponents)
