@@ -23,6 +23,15 @@ results := componenthelper.GetComponentsVersion(componenthelper.ComponentVersion
 })
 ```
 
+### PURL Version Handling
+When a PURL contains a version (e.g., `pkg:github/scanoss/scanner.c@1.2.3`), the version is automatically extracted and moved to the `Requirement` field. **This overwrites any existing requirement.** The PURL is then stored without the version (e.g., `pkg:github/scanoss/scanner.c`).
+
+This means the following inputs are equivalent:
+- `{Purl: "pkg:npm/lodash@4.17.0"}`
+- `{Purl: "pkg:npm/lodash", Requirement: "4.17.0"}`
+
+Qualifiers and subpaths in the PURL are preserved (e.g., `pkg:npm/%40scope/name@1.0.0?repository_url=https://example.com` becomes `pkg:npm/%40scope/name?repository_url=https://example.com` with Requirement `1.0.0`).
+
 More details about each function can be found in the packaged documentation.
 
 ## Bugs/Features

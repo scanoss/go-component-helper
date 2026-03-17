@@ -28,7 +28,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/scanoss/go-component-helper/componenthelper/utils"
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
 	purlhelper "github.com/scanoss/go-purl-helper/pkg"
 	"go.uber.org/zap"
@@ -55,12 +54,6 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 			})
 			continue
 		}
-		purlParts := strings.Split(dto.Purl, "@")
-		// If version contains a semver operator, move it to requirement and strip from purl
-		if len(purlParts) == 2 && utils.HasSemverOperator(purlParts[1]) {
-			dto.Requirement = purlParts[1]
-			dto.Purl = purlParts[0]
-		}
 		packageURL, err := purlhelper.PurlFromString(dto.Purl)
 		if err != nil {
 			s.Warnf("Failed to parse PURL %q (requirement: %q): %v", dto.Purl, dto.Requirement, err)
@@ -74,9 +67,15 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 			})
 			continue
 		}
-		if dto.Requirement == "" && len(purlParts) == 2 {
-			dto.Purl = purlParts[0]
-			dto.Requirement = purlParts[1]
+		// If the PURL contains a version, extract it and move it to the requirement field.
+		// Note: the version in the PURL always takes precedence over any existing requirement.
+		// We use strings.Replace on the original PURL string (rather than packageURL.ToString())
+		// to preserve percent-encoded characters (e.g., %40 in scoped npm packages like
+		// pkg:npm/%40scope/name). This matters because component names in the database are
+		// stored with %40, not @.
+		if packageURL.Version != "" {
+			dto.Requirement = packageURL.Version
+			dto.Purl = strings.Replace(dto.Purl, "@"+packageURL.Version, "", 1)
 		}
 		qualifiers := make(map[string]string, len(packageURL.Qualifiers))
 		for _, q := range packageURL.Qualifiers {
