@@ -39,6 +39,8 @@ type Component struct {
 	Requirement string `json:"requirement,omitempty"`
 	// Version is the resolved concrete version after processing.
 	Version string `json:"version,omitempty"`
+	// Versions list of component versions
+	Versions []string `json:"versions,omitempty"`
 	// Name namespace + name
 	Name string `json:"component_name,omitempty"`
 	// URL component URL
