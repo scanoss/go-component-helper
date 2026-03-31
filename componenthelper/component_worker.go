@@ -37,6 +37,7 @@ import (
 // componentResolver abstracts the component lookup operations used by the worker.
 type componentResolver interface {
 	GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
+	GetComponentVersions(ctx context.Context, purl string) (types.ComponentVersionsResponse, error)
 }
 
 // componentVersionWorker processes components from the jobs channel, resolving each component's
@@ -51,6 +52,8 @@ func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver 
 			results <- processedComponent
 			continue
 		}
+		// Add list of component versions
+		processedComponent.Versions = []string{}
 
 		// Set by default version = requirement
 		var component types.ComponentResponse
@@ -59,30 +62,35 @@ func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver 
 			Requirement: j.Requirement,
 		})
 
-		if err != nil {
-			if errors.Is(err, services.ErrComponentNotFound) {
-				s.Warnf("Purl doesn't exist: %s, %v", j.Purl, err)
-				processedComponent.Status.StatusCode = domain.ComponentNotFound
-				processedComponent.Status.Message = "Component not found"
-				results <- processedComponent
-				continue
-			}
-			if errors.Is(err, services.ErrVersionNotFound) {
-				s.Warnf("Failed to get component version: %s, %s", j.Purl, j.Requirement)
-				processedComponent.Status.StatusCode = domain.VersionNotFound
-				processedComponent.Status.Message = "Component version not found"
-				results <- processedComponent
-				continue
-			}
+		switch {
+		case errors.Is(err, services.ErrComponentNotFound):
+			s.Warnf("Purl doesn't exist: %s, %v", j.Purl, err)
+			processedComponent.Status.StatusCode = domain.ComponentNotFound
+			processedComponent.Status.Message = "Component not found"
+		case errors.Is(err, services.ErrVersionNotFound):
+			s.Warnf("Failed to get component version: %s, %s", j.Purl, j.Requirement)
+			processedComponent.Status.StatusCode = domain.VersionNotFound
+			processedComponent.Status.Message = "Component version not found"
+		case err != nil:
 			s.Errorf("Failed to get component: %s, %s, %v", j.Purl, j.Requirement, err)
 			processedComponent.Status.StatusCode = domain.ComponentNotFound
 			processedComponent.Status.Message = "Component not found"
-			results <- processedComponent
-			continue
+		default:
+			if component.Version != "" {
+				processedComponent.Version = component.Version
+			}
 		}
-		if component.Version != "" {
-			processedComponent.Version = component.Version
+
+		// Retrieve component versions on success or when version is not found
+		if !errors.Is(err, services.ErrComponentNotFound) && processedComponent.Status.StatusCode != domain.ComponentNotFound {
+			componentVersions, errCompVersion := resolver.GetComponentVersions(ctx, j.Purl)
+			if errCompVersion != nil {
+				s.Errorf("Failed to get component versions: %s, %v", j.Purl, errCompVersion)
+			} else {
+				processedComponent.Versions = componentVersions.Versions
+			}
 		}
+
 		results <- processedComponent
 	}
 }

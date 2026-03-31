@@ -32,6 +32,29 @@ This means the following inputs are equivalent:
 
 Qualifiers and subpaths in the PURL are preserved (e.g., `pkg:npm/%40scope/name@1.0.0?repository_url=https://example.com` becomes `pkg:npm/%40scope/name?repository_url=https://example.com` with Requirement `1.0.0`).
 
+### FindNearestVersion
+The `FindNearestVersion` utility resolves the closest semver version from a list of candidates. It strips any range operators from the requirement, then picks the candidate with the smallest weighted distance (major > minor > patch). On a tie, it prefers the higher version.
+
+```go
+import (
+    "github.com/scanoss/go-component-helper/componenthelper/utils"
+)
+
+candidates := []string{"1.0.0", "1.2.0", "1.4.0", "2.0.0"}
+
+// Exact match
+utils.FindNearestVersion("1.2.0", candidates) // "1.2.0"
+
+// Nearest version (1.3.0 is equidistant from 1.2.0 and 1.4.0, prefers higher)
+utils.FindNearestVersion("1.3.0", candidates) // "1.4.0"
+
+// Operators are stripped before comparing
+utils.FindNearestVersion(">=1.3.0", candidates) // "1.4.0"
+
+// Invalid requirement returns empty string
+utils.FindNearestVersion("not-a-version", candidates) // ""
+```
+
 More details about each function can be found in the packaged documentation.
 
 ## Bugs/Features

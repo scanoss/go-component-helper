@@ -24,13 +24,69 @@
 package utils
 
 import (
+	"math"
 	"regexp"
+	"strings"
+
+	"github.com/Masterminds/semver/v3"
 )
 
-// operatorRegex matches semver range operators (>=, <=, ~, >, <) at the start of a string.
-var operatorRegex = regexp.MustCompile(`^(>=|<=|~|>|<)`)
+// operatorRegex matches semver range operators (>=, <=, ~, ^, =, >, <) at the start of a string.
+var operatorRegex = regexp.MustCompile(`^(>=|<=|~|\^|=|>|<)`)
+
+// zeroVersion is used as a fallback for versions that cannot be parsed as semver.
+var zeroVersion, _ = semver.NewVersion("v0.0.0")
 
 // HasSemverOperator reports whether the given version string starts with a semver range operator.
 func HasSemverOperator(version string) bool {
 	return operatorRegex.MatchString(version)
+}
+
+// FindNearestVersion finds the version from candidates that is closest to the target requirement.
+// It strips any semver operators from the requirement before comparing.
+// Candidates that are not valid semver are treated as v0.0.0 (following the pickOneUrl approach).
+// If the requirement itself is not valid semver, it returns an empty string.
+func FindNearestVersion(requirement string, candidates []string) string {
+	target := stripOperators(requirement)
+	targetVer, err := semver.NewVersion(target)
+	if err != nil {
+		return ""
+	}
+
+	var nearest *semver.Version
+	var nearestOriginal string
+	minDistance := math.MaxFloat64
+
+	for _, c := range candidates {
+		raw := strings.TrimSpace(c)
+		v, errSemver := semver.NewVersion(raw)
+		if errSemver != nil {
+			v = zeroVersion
+		}
+		d := semverDistance(targetVer, v)
+		if d < minDistance || (d == minDistance && nearest != nil && v.GreaterThan(nearest)) {
+			minDistance = d
+			nearest = v
+			nearestOriginal = raw
+		}
+	}
+
+	if nearest == nil {
+		return ""
+	}
+	return nearestOriginal
+}
+
+// stripOperators removes leading semver range operators and surrounding whitespace from a version string.
+func stripOperators(version string) string {
+	return strings.TrimSpace(operatorRegex.ReplaceAllString(strings.TrimSpace(version), ""))
+}
+
+// semverDistance computes a weighted numeric distance between two semver versions.
+// Major differences are weighted most heavily, then minor, then patch.
+func semverDistance(a, b *semver.Version) float64 {
+	majorDiff := math.Abs(float64(a.Major()) - float64(b.Major()))
+	minorDiff := math.Abs(float64(a.Minor()) - float64(b.Minor()))
+	patchDiff := math.Abs(float64(a.Patch()) - float64(b.Patch()))
+	return majorDiff*1_000_000 + minorDiff*1_000 + patchDiff
 }

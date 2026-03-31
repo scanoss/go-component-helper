@@ -6,9 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.6.0] - 2026-04-01
 ### Added
+- Added `FindNearestVersion` utility to resolve the closest semver version from a list of candidates. It strips range operators (`>=`, `<=`, `~`, `>`, `<`) from the requirement, computes a weighted distance (major > minor > patch), and prefers the higher version on ties.
+- Added `Versions` field to `Component` struct to hold the list of available component versions
 - Added `OriginalPurl` and `OriginalRequirement` fields to `Component` struct to preserve the original values before sanitisation or resolution
+- Added `TestFindNearestVersion` tests covering exact match, nearest version selection, operator stripping, tie-breaking, invalid inputs, and edge cases
 - Added `TestSanitiseComponentsOriginalFields` tests to verify original field preservation across all sanitisation paths
+- Added `FindNearestVersion` usage example to README
+### Changed
+- Upgraded `scanoss/go-models` to v0.8.0
 
 ## [0.5.0] - 2026-03-19
 ### Changed
@@ -49,3 +57,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.3.0]: https://github.com/scanoss/go-component-helper/compare/v0.2.0...v0.3.0
 [0.4.0]: https://github.com/scanoss/go-component-helper/compare/v0.3.0...v0.4.0
 [0.5.0]: https://github.com/scanoss/go-component-helper/compare/v0.4.0...v0.5.0
+[0.6.0]: https://github.com/scanoss/go-component-helper/compare/v0.5.0...v0.6.0

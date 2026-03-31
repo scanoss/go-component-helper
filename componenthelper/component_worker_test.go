@@ -37,11 +37,19 @@ import (
 )
 
 type mockComponentResolver struct {
-	getComponentFn func(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
+	getComponentFn         func(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
+	getComponentVersionsFn func(ctx context.Context, purl string) (types.ComponentVersionsResponse, error)
 }
 
 func (m *mockComponentResolver) GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error) {
 	return m.getComponentFn(ctx, req)
+}
+
+func (m *mockComponentResolver) GetComponentVersions(ctx context.Context, purl string) (types.ComponentVersionsResponse, error) {
+	if m.getComponentVersionsFn != nil {
+		return m.getComponentVersionsFn(ctx, purl)
+	}
+	return types.ComponentVersionsResponse{}, nil
 }
 
 func TestComponentVersionWorker_NonSuccessStatusPassthrough(t *testing.T) {
