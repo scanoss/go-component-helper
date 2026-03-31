@@ -31,6 +31,10 @@ import (
 type Component struct {
 	// Purl is the Package URL identifying the component.
 	Purl string `json:"purl"`
+	// OriginalPurl is the original Package URL as provided before any sanitisation or resolution.
+	OriginalPurl string `json:"original_purl"`
+	// OriginalRequirement is the original version requirement as provided before any sanitisation or resolution.
+	OriginalRequirement string `json:"original_requirement"`
 	// Requirement is the version constraint used to resolve the component.
 	Requirement string `json:"requirement,omitempty"`
 	// Version is the resolved concrete version after processing.

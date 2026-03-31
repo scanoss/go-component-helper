@@ -45,8 +45,10 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 		// Check for empty purl
 		if dto.Purl == "" {
 			components = append(components, Component{
-				Purl:        dto.Purl,
-				Requirement: dto.Requirement,
+				Purl:                dto.Purl,
+				OriginalPurl:        dto.Purl,
+				OriginalRequirement: dto.Requirement,
+				Requirement:         dto.Requirement,
 				Status: domain.ComponentStatus{
 					Message:    "Empty Purl",
 					StatusCode: domain.InvalidPurl,
@@ -54,12 +56,16 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 			})
 			continue
 		}
+		originalPurl := dto.Purl
+		originalRequirement := dto.Requirement
 		packageURL, err := purlhelper.PurlFromString(dto.Purl)
 		if err != nil {
 			s.Warnf("Failed to parse PURL %q (requirement: %q): %v", dto.Purl, dto.Requirement, err)
 			components = append(components, Component{
-				Purl:        dto.Purl,
-				Requirement: dto.Requirement,
+				Purl:                dto.Purl,
+				OriginalPurl:        dto.Purl,
+				OriginalRequirement: dto.Requirement,
+				Requirement:         dto.Requirement,
 				Status: domain.ComponentStatus{
 					Message:    "Invalid Purl",
 					StatusCode: domain.InvalidPurl,
@@ -86,8 +92,10 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 		if err != nil {
 			s.Warnf("Failed to extract component name from PURL %q (requirement: %q): %v", dto.Purl, dto.Requirement, err)
 			components = append(components, Component{
-				Purl:        dto.Purl,
-				Requirement: dto.Requirement,
+				Purl:                dto.Purl,
+				OriginalPurl:        originalPurl,
+				Requirement:         dto.Requirement,
+				OriginalRequirement: originalRequirement,
 				Status: domain.ComponentStatus{
 					Message:    "Invalid Purl",
 					StatusCode: domain.InvalidPurl,
@@ -103,19 +111,21 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 		}
 
 		components = append(components, Component{
-			Requirement: dto.Requirement,
-			Purl:        dto.Purl,
+			Purl:                dto.Purl,
+			OriginalPurl:        originalPurl,
+			Requirement:         dto.Requirement,
+			OriginalRequirement: originalRequirement,
+			PurlType:            packageURL.Type,
+			PurlName:            packageURL.Name,
+			PurlQualifiers:      qualifiers,
+			PurlNamespace:       packageURL.Namespace,
+			PurlSubpath:         packageURL.Subpath,
+			Name:                componentName,
+			URL:                 URL,
 			Status: domain.ComponentStatus{
 				Message:    "",
 				StatusCode: domain.Success,
 			},
-			PurlType:       packageURL.Type,
-			PurlName:       packageURL.Name,
-			PurlQualifiers: qualifiers,
-			PurlNamespace:  packageURL.Namespace,
-			PurlSubpath:    packageURL.Subpath,
-			Name:           componentName,
-			URL:            URL,
 		})
 	}
 	return components
