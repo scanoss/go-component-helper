@@ -107,6 +107,96 @@ func TestSanitiseComponents(t *testing.T) {
 	}
 }
 
+func TestSanitiseComponentsOriginalFields(t *testing.T) {
+	err := zlog.NewSugaredDevLogger()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a sugared logger", err)
+	}
+	defer zlog.SyncZap()
+	ctx := ctxzap.ToContext(context.Background(), zlog.L)
+	s := ctxzap.Extract(ctx).Sugar()
+
+	tests := []struct {
+		name                 string
+		input                ComponentDTO
+		expectedOriginalPurl string
+		expectedOriginalReq  string
+		expectedPurl         string
+		expectedRequirement  string
+	}{
+		{
+			name:                 "Version in purl is extracted and original purl preserved",
+			input:                ComponentDTO{Purl: "pkg:npm/lodash@4.17.21", Requirement: ""},
+			expectedOriginalPurl: "pkg:npm/lodash@4.17.21",
+			expectedOriginalReq:  "",
+			expectedPurl:         "pkg:npm/lodash",
+			expectedRequirement:  "4.17.21",
+		},
+		{
+			name:                 "Requirement provided without version in purl",
+			input:                ComponentDTO{Purl: "pkg:npm/lodash", Requirement: "^4.0.0"},
+			expectedOriginalPurl: "pkg:npm/lodash",
+			expectedOriginalReq:  "^4.0.0",
+			expectedPurl:         "pkg:npm/lodash",
+			expectedRequirement:  "^4.0.0",
+		},
+		{
+			name:                 "Version in purl overrides existing requirement",
+			input:                ComponentDTO{Purl: "pkg:npm/lodash@4.17.21", Requirement: "^4.0.0"},
+			expectedOriginalPurl: "pkg:npm/lodash@4.17.21",
+			expectedOriginalReq:  "^4.0.0",
+			expectedPurl:         "pkg:npm/lodash",
+			expectedRequirement:  "4.17.21",
+		},
+		{
+			name:                 "Empty purl preserves original fields",
+			input:                ComponentDTO{Purl: "", Requirement: "1.0.0"},
+			expectedOriginalPurl: "",
+			expectedOriginalReq:  "1.0.0",
+			expectedPurl:         "",
+			expectedRequirement:  "1.0.0",
+		},
+		{
+			name:                 "Invalid purl preserves original fields",
+			input:                ComponentDTO{Purl: "invalid-purl", Requirement: "2.0.0"},
+			expectedOriginalPurl: "invalid-purl",
+			expectedOriginalReq:  "2.0.0",
+			expectedPurl:         "invalid-purl",
+			expectedRequirement:  "2.0.0",
+		},
+		{
+			name:                 "Scoped npm purl with version preserves original",
+			input:                ComponentDTO{Purl: "pkg:npm/%40scope/name@1.2.3", Requirement: ""},
+			expectedOriginalPurl: "pkg:npm/%40scope/name@1.2.3",
+			expectedOriginalReq:  "",
+			expectedPurl:         "pkg:npm/%40scope/name",
+			expectedRequirement:  "1.2.3",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := sanitiseComponents(s, []ComponentDTO{tt.input})
+			if len(result) != 1 {
+				t.Fatalf("expected 1 component, got %d", len(result))
+			}
+			c := result[0]
+			if c.OriginalPurl != tt.expectedOriginalPurl {
+				t.Errorf("OriginalPurl = %q, want %q", c.OriginalPurl, tt.expectedOriginalPurl)
+			}
+			if c.OriginalRequirement != tt.expectedOriginalReq {
+				t.Errorf("OriginalRequirement = %q, want %q", c.OriginalRequirement, tt.expectedOriginalReq)
+			}
+			if c.Purl != tt.expectedPurl {
+				t.Errorf("Purl = %q, want %q", c.Purl, tt.expectedPurl)
+			}
+			if c.Requirement != tt.expectedRequirement {
+				t.Errorf("Requirement = %q, want %q", c.Requirement, tt.expectedRequirement)
+			}
+		})
+	}
+}
+
 func TestComponentNameFromString(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -45,19 +45,7 @@ type componentResolver interface {
 func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver componentResolver, jobs chan Component, results chan Component, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for j := range jobs {
-		processedComponent := Component{
-			Purl:           j.Purl,
-			Requirement:    j.Requirement,
-			Version:        j.Version,
-			Name:           j.Name,
-			Status:         j.Status,
-			PurlType:       j.PurlType,
-			PurlSubpath:    j.PurlSubpath,
-			PurlNamespace:  j.PurlNamespace,
-			PurlQualifiers: j.PurlQualifiers,
-			PurlName:       j.PurlName,
-			URL:            j.URL,
-		}
+		processedComponent := j
 
 		if processedComponent.Status.StatusCode != domain.Success {
 			results <- processedComponent
