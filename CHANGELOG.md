@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.0.0] - 2026-04-07
+### Changed
+- **BREAKING:** Renamed `ComponentVersionCfg` to `Cfg`
+- **BREAKING:** Refactored `GetComponentsVersion` from a standalone function into a method on the new `ComponentHelper` struct, now accepting `context.Context` and `[]ComponentDTO` as parameters instead of a monolithic config
+### Added
+- Added `ComponentHelper` struct to encapsulate component resolution dependencies (max workers, logger, database connection)
+- Added `Helper` constructor function
+- Added `FindNearestVersion` method on `Component` struct to resolve the nearest version using the component's own `Requirement` and `Versions` fields
 
 ## [0.6.0] - 2026-04-01
 ### Added
@@ -58,3 +66,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.0]: https://github.com/scanoss/go-component-helper/compare/v0.3.0...v0.4.0
 [0.5.0]: https://github.com/scanoss/go-component-helper/compare/v0.4.0...v0.5.0
 [0.6.0]: https://github.com/scanoss/go-component-helper/compare/v0.5.0...v0.6.0
+[1.0.0]: https://github.com/scanoss/go-component-helper/compare/v0.6.0...v1.0.0
