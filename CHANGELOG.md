@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-## [1.0.0] - 2026-04-07
+## [1.0.0] - 2026-04-08
 ### Changed
 - **BREAKING:** Renamed `ComponentVersionCfg` to `Cfg`
 - **BREAKING:** Refactored `GetComponentsVersion` from a standalone function into a method on the new `ComponentHelper` struct, now accepting `context.Context` and `[]ComponentDTO` as parameters instead of a monolithic config
