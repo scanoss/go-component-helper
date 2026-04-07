@@ -32,22 +32,28 @@ import (
 	"go.uber.org/zap"
 )
 
-// ComponentVersionCfg holds the configuration for resolving component versions.
-type ComponentVersionCfg struct {
+const MaxWorkers = 5
+
+// Cfg holds the configuration for the component helper.
+type Cfg struct {
 	// MaxWorkers is the maximum number of concurrent goroutines used to resolve versions.
 	// If <= 0, defaults to MaxWorkers (5).
 	MaxWorkers int
-	// Ctx is the context used for cancellation and deadline propagation.
-	Ctx context.Context
-	// S is the sugared logger for structured logging.
-	S *zap.SugaredLogger
 	// DB is the database connection used to query component data.
 	DB *sqlx.DB
-	// Input is the list of components whose versions need to be resolved.
-	Input []ComponentDTO
 }
 
-const MaxWorkers = 5
+type ComponentHelper struct {
+	maxWorkers int
+	db         *sqlx.DB
+}
+
+func NewHelper(cfg Cfg) *ComponentHelper {
+	return &ComponentHelper{
+		maxWorkers: cfg.MaxWorkers,
+		db:         cfg.DB,
+	}
+}
 
 // GetComponentsVersion resolves the concrete version for each component using a fan-out/fan-in
 // concurrency pattern. It spawns up to MaxWorkers goroutines (capped by the number of components)
@@ -56,20 +62,20 @@ const MaxWorkers = 5
 // Important: during sanitisation, if the input PURL contains a version (e.g., pkg:pypi/gtest@1.17.0),
 // the version is extracted and moved to the Requirement field, overwriting any existing requirement.
 // The PURL is then stored without the version (e.g., pkg:pypi/gtest).
-func GetComponentsVersion(config ComponentVersionCfg) []Component {
-	sanitisedComponents := sanitiseComponents(config.S, config.Input)
+func (c *ComponentHelper) GetComponentsVersion(ctx context.Context, s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Component {
+	sanitisedComponents := sanitiseComponents(s, componentDTOs)
 	numJobs := len(sanitisedComponents)
 	jobs := make(chan Component, numJobs)
 	results := make(chan Component, numJobs)
-	if config.MaxWorkers <= 0 {
-		config.MaxWorkers = MaxWorkers
+	if c.maxWorkers <= 0 {
+		c.maxWorkers = MaxWorkers
 	}
-	numWorkers := min(config.MaxWorkers, numJobs)
-	sc := scanoss.New(config.DB)
+	numWorkers := min(c.maxWorkers, numJobs)
+	sc := scanoss.New(c.db)
 	wg := sync.WaitGroup{}
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go componentVersionWorker(config.Ctx, config.S, sc.Component, jobs, results, &wg)
+		go componentVersionWorker(ctx, s, sc.Component, jobs, results, &wg)
 	}
 	for _, c := range sanitisedComponents {
 		jobs <- c

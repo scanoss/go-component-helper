@@ -21,7 +21,7 @@
  * THE SOFTWARE.
  */
 
-package utils
+package componenthelper
 
 import (
 	"math"

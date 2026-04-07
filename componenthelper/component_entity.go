@@ -58,3 +58,7 @@ type Component struct {
 	// Component Status
 	Status domain.ComponentStatus
 }
+
+func (c *Component) FindNearestVersion() string {
+	return FindNearestVersion(c.Requirement, c.Versions)
+}

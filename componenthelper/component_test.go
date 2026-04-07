@@ -67,15 +67,14 @@ func TestGetComponentsVersion(t *testing.T) {
 		},
 	}
 
+	componentHelper := NewHelper(Cfg{
+		MaxWorkers: 2,
+		DB:         nil,
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GetComponentsVersion(ComponentVersionCfg{
-				MaxWorkers: 2,
-				Ctx:        ctx,
-				S:          s,
-				DB:         nil,
-				Input:      tt.input,
-			})
+			result := componentHelper.GetComponentsVersion(ctx, s, tt.input)
 
 			if len(result) != tt.expectedLen {
 				t.Fatalf("expected %d components, got %d", tt.expectedLen, len(result))
