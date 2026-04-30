@@ -32,6 +32,38 @@ This means the following inputs are equivalent:
 
 Qualifiers and subpaths in the PURL are preserved (e.g., `pkg:npm/%40scope/name@1.0.0?repository_url=https://example.com` becomes `pkg:npm/%40scope/name?repository_url=https://example.com` with Requirement `1.0.0`).
 
+### Result
+Each `Component` carries the resolved version, the list of known versions, parsed PURL fields, a `Status`, and — when available — a `SourcePurl` pointing at the upstream source-mine equivalent.
+
+If the standard lookup fails, the worker falls back to the SCANOSS projects table: when a row exists, `PurlInfo` is rebuilt from it and the status is promoted from `ComponentNotFound` to `VersionNotFound`.
+
+Example response (input: `pkg:pypi/scanoss@1.20.0`):
+
+```json
+{
+  "purl": "pkg:pypi/scanoss",
+  "component_name": "scanoss",
+  "url": "https://pypi.org/project/scanoss",
+  "purl_type": "pypi",
+  "purl_name": "scanoss",
+  "original_purl": "pkg:pypi/scanoss@1.20.0",
+  "original_requirement": "",
+  "requirement": "1.20.0",
+  "version": "1.20.0",
+  "versions": ["1.20.0", "1.19.0", "1.18.0"],
+  "Status": { "StatusCode": "SUCCESS" },
+  "source_purl": {
+    "purl": "pkg:github/scanoss/scanoss.py",
+    "component_name": "scanoss/scanoss.py",
+    "url": "https://github.com/scanoss/scanoss.py",
+    "purl_type": "github",
+    "purl_name": "scanoss.py",
+    "purl_namespace": "scanoss",
+    "Status": { "StatusCode": "SUCCESS" }
+  }
+}
+```
+
 ### FindNearestVersion
 The `FindNearestVersion` utility resolves the closest semver version from a list of candidates. It strips any range operators from the requirement, then picks the candidate with the smallest weighted distance (major > minor > patch). On a tie, it prefers the higher version.
 

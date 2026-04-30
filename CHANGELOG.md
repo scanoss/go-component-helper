@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored `sanitiseComponents` to delegate PURL parsing to the new `buildPurlInfo` helper
 - Source PURL is now derived from the project row's `Source*` fields via a single `GetProject` call; the `componentResolver` interface drops `GetSourcePurl` in favor of `GetProject`
 - Updated dependencies to their latest versions
+- Updated README with a Result section documenting the resolved `Component` shape, the projects-table fallback behavior, and an example response showing the `source_purl` enrichment
+
 
 ## [0.6.0] - 2026-04-01
 ### Added
