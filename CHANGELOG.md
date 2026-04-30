@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.7.0] - 2026-04-30
 ### Added
 - Added source PURL resolution to the component worker: when a component resolves successfully, the worker exposes the upstream source-mine PURL on `Component.SourcePurl`
 - Added `SourcePurl` and `PurlInfo` types; `PurlInfo` is embedded on `Component` to expose the parsed PURL components (`Name`, `URL`, `PurlType`, `PurlName`, `PurlNamespace`, `PurlQualifiers`, `PurlSubpath`)
@@ -69,3 +71,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.0]: https://github.com/scanoss/go-component-helper/compare/v0.3.0...v0.4.0
 [0.5.0]: https://github.com/scanoss/go-component-helper/compare/v0.4.0...v0.5.0
 [0.6.0]: https://github.com/scanoss/go-component-helper/compare/v0.5.0...v0.6.0
+[0.7.0]: https://github.com/scanoss/go-component-helper/compare/v0.6.0...v0.7.0
