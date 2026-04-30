@@ -29,8 +29,18 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/scanoss/go-models/pkg/scanoss"
+	"github.com/scanoss/go-models/pkg/services"
 	"go.uber.org/zap"
 )
+
+// scanossResolver bundles the component and project services into a single
+// componentResolver implementation by embedding both — each contributes its
+// own methods (GetComponent / GetComponentVersions / GetSourcePurl from
+// ComponentService, GetProject from ProjectService) without overlap.
+type scanossResolver struct {
+	*services.ComponentService
+	*services.ProjectService
+}
 
 // ComponentVersionCfg holds the configuration for resolving component versions.
 type ComponentVersionCfg struct {
@@ -66,10 +76,11 @@ func GetComponentsVersion(config ComponentVersionCfg) []Component {
 	}
 	numWorkers := min(config.MaxWorkers, numJobs)
 	sc := scanoss.New(config.DB)
+	resolver := &scanossResolver{ComponentService: sc.Component, ProjectService: sc.Project}
 	wg := sync.WaitGroup{}
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go componentVersionWorker(config.Ctx, config.S, sc.Component, jobs, results, &wg)
+		go componentVersionWorker(config.Ctx, config.S, resolver, jobs, results, &wg)
 	}
 	for _, c := range sanitisedComponents {
 		jobs <- c

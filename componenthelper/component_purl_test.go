@@ -28,7 +28,6 @@ import (
 	"testing"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/scanoss/go-models/pkg/types"
 	zlog "github.com/scanoss/zap-logging-helper/pkg/logger"
 )
 
@@ -274,58 +273,3 @@ func TestBuildPurlInfo(t *testing.T) {
 	}
 }
 
-func TestBuildSourcePurlString(t *testing.T) {
-	tests := []struct {
-		name string
-		src  types.SourcePurl
-		want string
-	}{
-		{
-			name: "Github source_purl_name carries the namespace",
-			src: types.SourcePurl{
-				PurlType:       "github",
-				SourcePurlName: "scanoss/engine",
-				SourceVendor:   "scanoss",
-			},
-			want: "pkg:github/scanoss/engine",
-		},
-		{
-			name: "Npm without scope",
-			src: types.SourcePurl{
-				PurlType:       "npm",
-				SourcePurlName: "lodash",
-			},
-			want: "pkg:npm/lodash",
-		},
-		{
-			name: "Scoped npm encoded in source_purl_name",
-			src: types.SourcePurl{
-				PurlType:       "npm",
-				SourcePurlName: "%40scope/name",
-			},
-			want: "pkg:npm/%40scope/name",
-		},
-		{
-			name: "SourceVendor is ignored for PURL assembly",
-			src: types.SourcePurl{
-				PurlType:       "github",
-				SourcePurlName: "scanoss/engine",
-				SourceVendor:   "different-vendor",
-			},
-			want: "pkg:github/scanoss/engine",
-		},
-		{
-			name: "Empty source produces canonical pkg:/ form",
-			src:  types.SourcePurl{},
-			want: "pkg:/",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := buildSourcePurlString(tt.src); got != tt.want {
-				t.Errorf("buildSourcePurlString() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}

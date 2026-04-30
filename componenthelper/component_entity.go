@@ -27,7 +27,7 @@ import (
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
 )
 
-// PurlInfo holds the Package URL related descriptive fields 
+// PurlInfo holds the Package URL related descriptive fields.
 type PurlInfo struct {
 	// Purl is the Package URL identifying the component.
 	Purl string `json:"purl"`

@@ -39,7 +39,7 @@ import (
 type mockComponentResolver struct {
 	getComponentFn         func(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
 	getComponentVersionsFn func(ctx context.Context, purl string) (types.ComponentVersionsResponse, error)
-	getSourcePurlFn        func(ctx context.Context, purl string) (types.SourcePurl, error)
+	getProjectFn           func(ctx context.Context, purl string) (types.Project, error)
 }
 
 func (m *mockComponentResolver) GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error) {
@@ -53,11 +53,11 @@ func (m *mockComponentResolver) GetComponentVersions(ctx context.Context, purl s
 	return types.ComponentVersionsResponse{}, nil
 }
 
-func (m *mockComponentResolver) GetSourcePurl(ctx context.Context, purl string) (types.SourcePurl, error) {
-	if m.getSourcePurlFn != nil {
-		return m.getSourcePurlFn(ctx, purl)
+func (m *mockComponentResolver) GetProject(ctx context.Context, purl string) (types.Project, error) {
+	if m.getProjectFn != nil {
+		return m.getProjectFn(ctx, purl)
 	}
-	return types.SourcePurl{}, services.ErrSourcePurlNotFound
+	return types.Project{}, services.ErrProjectNotFound
 }
 
 func TestComponentVersionWorker_NonSuccessStatusPassthrough(t *testing.T) {
