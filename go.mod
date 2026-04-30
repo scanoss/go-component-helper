@@ -3,14 +3,14 @@ module github.com/scanoss/go-component-helper
 go 1.25.0
 
 require (
-	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/scanoss/go-grpc-helper v0.15.1
 	github.com/scanoss/go-models v0.10.0
 	github.com/scanoss/go-purl-helper v0.3.0
 	github.com/scanoss/zap-logging-helper v0.4.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 )
 
 require (
