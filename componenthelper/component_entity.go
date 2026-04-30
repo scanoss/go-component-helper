@@ -27,20 +27,10 @@ import (
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
 )
 
-// Component represents the component entity used across all services.
-type Component struct {
+// PurlInfo holds the Package URL related descriptive fields 
+type PurlInfo struct {
 	// Purl is the Package URL identifying the component.
 	Purl string `json:"purl"`
-	// OriginalPurl is the original Package URL as provided before any sanitisation or resolution.
-	OriginalPurl string `json:"original_purl"`
-	// OriginalRequirement is the original version requirement as provided before any sanitisation or resolution.
-	OriginalRequirement string `json:"original_requirement"`
-	// Requirement is the version constraint used to resolve the component.
-	Requirement string `json:"requirement,omitempty"`
-	// Version is the resolved concrete version after processing.
-	Version string `json:"version,omitempty"`
-	// Versions list of component versions
-	Versions []string `json:"versions,omitempty"`
 	// Name namespace + name
 	Name string `json:"component_name,omitempty"`
 	// URL component URL
@@ -55,6 +45,30 @@ type Component struct {
 	PurlQualifiers map[string]string `json:"purl_qualifiers,omitempty"`
 	// PurlSubpath is the subpath within the package.
 	PurlSubpath string `json:"purl_subpath,omitempty"`
+}
+
+// Component represents the component entity used across all services.
+type Component struct {
+	// OriginalPurl is the original Package URL as provided before any sanitisation or resolution.
+	OriginalPurl string `json:"original_purl"`
+	// OriginalRequirement is the original version requirement as provided before any sanitisation or resolution.
+	OriginalRequirement string `json:"original_requirement"`
+	// Requirement is the version constraint used to resolve the component.
+	Requirement string `json:"requirement,omitempty"`
+	// Version is the resolved concrete version after processing.
+	Version string `json:"version,omitempty"`
+	// Versions list of component versions
+	Versions []string `json:"versions,omitempty"`
+	PurlInfo
+	// Component Status
+	Status domain.ComponentStatus
+	// SourcePurl holds the source-mine Package URL representation of the component.
+	SourcePurl *SourcePurl `json:"source_purl,omitempty"`
+}
+
+// SourcePurl represents the source-mine Package URL representation of a component.
+type SourcePurl struct {
+	PurlInfo
 	// Component Status
 	Status domain.ComponentStatus
 }

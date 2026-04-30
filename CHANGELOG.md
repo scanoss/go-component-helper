@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added source PURL resolution to the component worker: when a component resolves successfully, the worker exposes the upstream source-mine PURL on `Component.SourcePurl`
+- Added `SourcePurl` and `PurlInfo` types; `PurlInfo` is embedded on `Component` to expose the parsed PURL components (`Name`, `URL`, `PurlType`, `PurlName`, `PurlNamespace`, `PurlQualifiers`, `PurlSubpath`)
+- Added `buildPurlInfo` helper to decompose a PURL string into its parsed parts
+
+### Changed
+- Refactored `sanitiseComponents` to delegate PURL parsing to the new `buildPurlInfo` helper
 
 ## [0.6.0] - 2026-04-01
 ### Added

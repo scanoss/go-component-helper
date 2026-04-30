@@ -38,6 +38,10 @@ import (
 type componentResolver interface {
 	GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
 	GetComponentVersions(ctx context.Context, purl string) (types.ComponentVersionsResponse, error)
+	// GetSourcePurl returns the raw source-mine data used to build a source
+	// PURL for the given component PURL. Implementations should return
+	// services.ErrSourcePurlNotFound when no source PURL exists.
+	GetSourcePurl(ctx context.Context, purl string) (types.SourcePurl, error)
 }
 
 // componentVersionWorker processes components from the jobs channel, resolving each component's
@@ -88,6 +92,44 @@ func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver 
 				s.Errorf("Failed to get component versions: %s, %v", j.Purl, errCompVersion)
 			} else {
 				processedComponent.Versions = componentVersions.Versions
+			}
+		}
+
+		// Resolve the source PURL (e.g. upstream source-mine equivalent)
+		// only when the component itself was resolved successfully. A missing
+		// source PURL is normal and should not affect the component status.
+		if processedComponent.Status.StatusCode == domain.Success {
+			sourcePurl, errSrc := resolver.GetSourcePurl(ctx, j.Purl)
+			switch {
+			case errors.Is(errSrc, services.ErrSourcePurlNotFound):
+				// No source PURL for this component — leave nil.
+			case errSrc != nil:
+				s.Warnf("Failed to get source PURL for %s: %v", j.Purl, errSrc)
+			default:
+				sourcePurlString := buildSourcePurlString(sourcePurl)
+				sourceInfo, _, errBuild := buildPurlInfo(s, sourcePurlString)
+				switch {
+				case errBuild != nil:
+					s.Warnf("Failed to parse source PURL %q for %s: %v", sourcePurlString, j.Purl, errBuild)
+					processedComponent.SourcePurl = &SourcePurl{
+						Status: domain.ComponentStatus{
+							Message:    "Invalid Source Purl",
+							StatusCode: domain.InvalidPurl,
+						},
+					}
+				case sourceInfo.PurlType == processedComponent.PurlType && sourceInfo.Name == processedComponent.Name:
+					// Source PURL resolves to the same component — leave nil.
+				default:
+					if sourcePurl.RepositoryURL != "" {
+						sourceInfo.URL = sourcePurl.RepositoryURL
+					}
+					processedComponent.SourcePurl = &SourcePurl{
+						PurlInfo: sourceInfo,
+						Status: domain.ComponentStatus{
+							StatusCode: domain.Success,
+						},
+					}
+				}
 			}
 		}
 

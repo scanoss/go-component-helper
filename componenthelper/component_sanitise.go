@@ -24,17 +24,11 @@
 package componenthelper
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
-	purlhelper "github.com/scanoss/go-purl-helper/pkg"
 	"go.uber.org/zap"
 )
-
-var pkgRegex = regexp.MustCompile(`^pkg:(?P<type>\w+)/(?P<name>.+)$`) // regex to parse purl name from purl string
-var typeRegex = regexp.MustCompile(`^(npm|nuget)$`)                   // regex to parse purl types that should not be lower cased
 
 // sanitiseComponents validates and normalises a list of ComponentDTO into Components.
 // It checks for empty or invalid PURLs, extracts version constraints from the PURL when
@@ -45,7 +39,9 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 		// Check for empty purl
 		if dto.Purl == "" {
 			components = append(components, Component{
-				Purl:                dto.Purl,
+				PurlInfo: PurlInfo{
+					Purl: dto.Purl,
+				},
 				OriginalPurl:        dto.Purl,
 				OriginalRequirement: dto.Requirement,
 				Requirement:         dto.Requirement,
@@ -58,13 +54,16 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 		}
 		originalPurl := dto.Purl
 		originalRequirement := dto.Requirement
-		packageURL, err := purlhelper.PurlFromString(dto.Purl)
+
+		purlInfo, purlVersion, err := buildPurlInfo(s, dto.Purl)
 		if err != nil {
-			s.Warnf("Failed to parse PURL %q (requirement: %q): %v", dto.Purl, dto.Requirement, err)
+			s.Warnf("%v", err)
 			components = append(components, Component{
-				Purl:                dto.Purl,
-				OriginalPurl:        dto.Purl,
-				OriginalRequirement: dto.Requirement,
+				PurlInfo: PurlInfo{
+					Purl: dto.Purl,
+				},
+				OriginalPurl:        originalPurl,
+				OriginalRequirement: originalRequirement,
 				Requirement:         dto.Requirement,
 				Status: domain.ComponentStatus{
 					Message:    "Invalid Purl",
@@ -79,49 +78,16 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 		// to preserve percent-encoded characters (e.g., %40 in scoped npm packages like
 		// pkg:npm/%40scope/name). This matters because component names in the database are
 		// stored with %40, not @.
-		if packageURL.Version != "" {
-			dto.Requirement = packageURL.Version
-			dto.Purl = strings.Replace(dto.Purl, "@"+packageURL.Version, "", 1)
+		if purlVersion != "" {
+			dto.Requirement = purlVersion
+			dto.Purl = strings.Replace(dto.Purl, "@"+purlVersion, "", 1)
 		}
-		qualifiers := make(map[string]string, len(packageURL.Qualifiers))
-		for _, q := range packageURL.Qualifiers {
-			qualifiers[q.Key] = q.Value
-		}
-
-		componentName, err := ComponentNameFromString(dto.Purl)
-		if err != nil {
-			s.Warnf("Failed to extract component name from PURL %q (requirement: %q): %v", dto.Purl, dto.Requirement, err)
-			components = append(components, Component{
-				Purl:                dto.Purl,
-				OriginalPurl:        originalPurl,
-				Requirement:         dto.Requirement,
-				OriginalRequirement: originalRequirement,
-				Status: domain.ComponentStatus{
-					Message:    "Invalid Purl",
-					StatusCode: domain.InvalidPurl,
-				},
-			})
-			continue
-		}
-
-		URL, err := purlhelper.ProjectUrl(componentName, packageURL.Type)
-		if err != nil {
-			s.Warnf("Failed to derive project URL for PURL %q (requirement: %q): %v. URL will be empty.", dto.Purl, dto.Requirement, err)
-			URL = ""
-		}
-
+		purlInfo.Purl = dto.Purl
 		components = append(components, Component{
-			Purl:                dto.Purl,
 			OriginalPurl:        originalPurl,
 			Requirement:         dto.Requirement,
 			OriginalRequirement: originalRequirement,
-			PurlType:            packageURL.Type,
-			PurlName:            packageURL.Name,
-			PurlQualifiers:      qualifiers,
-			PurlNamespace:       packageURL.Namespace,
-			PurlSubpath:         packageURL.Subpath,
-			Name:                componentName,
-			URL:                 URL,
+			PurlInfo:            purlInfo,
 			Status: domain.ComponentStatus{
 				Message:    "",
 				StatusCode: domain.Success,
@@ -129,26 +95,4 @@ func sanitiseComponents(s *zap.SugaredLogger, componentDTOs []ComponentDTO) []Co
 		})
 	}
 	return components
-}
-
-// ComponentNameFromString take an input Purl string and returns the component name only.
-func ComponentNameFromString(purlString string) (string, error) {
-	if len(purlString) == 0 {
-		return "", fmt.Errorf("no purl string supplied to parse")
-	}
-	matches := pkgRegex.FindStringSubmatch(purlString)
-	if len(matches) > 0 {
-		ti := pkgRegex.SubexpIndex("type")
-		ni := pkgRegex.SubexpIndex("name")
-		if ni >= 0 {
-			// Remove any version@/subpath?/qualifiers# info from the PURL
-			pn := strings.Split(strings.Split(strings.Split(matches[ni], "@")[0], "?")[0], "#")[0]
-			// Lowercase the purl name if it's not on the exclusion list (defined in the regex)
-			if ti >= 0 && !typeRegex.MatchString(matches[ti]) {
-				pn = strings.ToLower(pn)
-			}
-			return pn, nil
-		}
-	}
-	return "", fmt.Errorf("no purl name found in '%v'", purlString)
 }
