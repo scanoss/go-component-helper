@@ -39,6 +39,7 @@ import (
 type mockComponentResolver struct {
 	getComponentFn         func(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
 	getComponentVersionsFn func(ctx context.Context, purl string) (types.ComponentVersionsResponse, error)
+	getSourcePurlFn        func(ctx context.Context, purl string) (types.SourcePurl, error)
 }
 
 func (m *mockComponentResolver) GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error) {
@@ -50,6 +51,13 @@ func (m *mockComponentResolver) GetComponentVersions(ctx context.Context, purl s
 		return m.getComponentVersionsFn(ctx, purl)
 	}
 	return types.ComponentVersionsResponse{}, nil
+}
+
+func (m *mockComponentResolver) GetSourcePurl(ctx context.Context, purl string) (types.SourcePurl, error) {
+	if m.getSourcePurlFn != nil {
+		return m.getSourcePurlFn(ctx, purl)
+	}
+	return types.SourcePurl{}, services.ErrSourcePurlNotFound
 }
 
 func TestComponentVersionWorker_NonSuccessStatusPassthrough(t *testing.T) {
@@ -72,7 +80,7 @@ func TestComponentVersionWorker_NonSuccessStatusPassthrough(t *testing.T) {
 		{
 			name: "InvalidPurl status is passed through unchanged",
 			input: Component{
-				Purl:        "invalid-purl",
+				PurlInfo:    PurlInfo{Purl: "invalid-purl"},
 				Requirement: "",
 				Status: domain.ComponentStatus{
 					Message:    "Invalid Purl",
@@ -87,7 +95,7 @@ func TestComponentVersionWorker_NonSuccessStatusPassthrough(t *testing.T) {
 		{
 			name: "Empty purl with InvalidPurl status is passed through",
 			input: Component{
-				Purl:        "",
+				PurlInfo:    PurlInfo{Purl: ""},
 				Requirement: "1.0.0",
 				Status: domain.ComponentStatus{
 					Message:    "Empty Purl",
@@ -102,7 +110,7 @@ func TestComponentVersionWorker_NonSuccessStatusPassthrough(t *testing.T) {
 		{
 			name: "ComponentNotFound status is passed through",
 			input: Component{
-				Purl:        "pkg:npm/nonexistent",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/nonexistent"},
 				Requirement: "1.0.0",
 				Status: domain.ComponentStatus{
 					Message:    "Component not found",
@@ -117,7 +125,7 @@ func TestComponentVersionWorker_NonSuccessStatusPassthrough(t *testing.T) {
 		{
 			name: "VersionNotFound status is passed through",
 			input: Component{
-				Purl:        "pkg:npm/lodash",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/lodash"},
 				Requirement: ">=99.0.0",
 				Status: domain.ComponentStatus{
 					Message:    "Component version not found",
@@ -173,7 +181,7 @@ func TestComponentVersionWorker_PreservesVersion(t *testing.T) {
 	s := ctxzap.Extract(ctx).Sugar()
 
 	input := Component{
-		Purl:        "pkg:npm/lodash",
+		PurlInfo:    PurlInfo{Purl: "pkg:npm/lodash"},
 		Requirement: "4.17.21",
 		Version:     "4.17.21",
 		Status: domain.ComponentStatus{
@@ -212,21 +220,21 @@ func TestComponentVersionWorker_MultipleJobs(t *testing.T) {
 
 	inputs := []Component{
 		{
-			Purl: "invalid1",
+			PurlInfo: PurlInfo{Purl: "invalid1"},
 			Status: domain.ComponentStatus{
 				Message:    "Invalid Purl",
 				StatusCode: domain.InvalidPurl,
 			},
 		},
 		{
-			Purl: "",
+			PurlInfo: PurlInfo{Purl: ""},
 			Status: domain.ComponentStatus{
 				Message:    "Empty Purl",
 				StatusCode: domain.InvalidPurl,
 			},
 		},
 		{
-			Purl:        "invalid2",
+			PurlInfo:    PurlInfo{Purl: "invalid2"},
 			Requirement: "1.0.0",
 			Status: domain.ComponentStatus{
 				Message:    "Invalid Purl",
@@ -288,7 +296,7 @@ func TestComponentVersionWorker_ComponentResolverSuccess(t *testing.T) {
 		{
 			name: "GetComponent success replaces version",
 			input: Component{
-				Purl:        "pkg:npm/lodash",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/lodash"},
 				Requirement: "^4.0.0",
 				Version:     "4.0.0",
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
@@ -304,7 +312,7 @@ func TestComponentVersionWorker_ComponentResolverSuccess(t *testing.T) {
 		{
 			name: "GetComponent success with empty version preserves original",
 			input: Component{
-				Purl:        "pkg:npm/lodash",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/lodash"},
 				Requirement: "^4.0.0",
 				Version:     "4.0.0",
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
@@ -368,7 +376,7 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 		{
 			name: "Purl not found returns ComponentNotFound",
 			input: Component{
-				Purl:        "pkg:npm/unknown",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/unknown"},
 				Requirement: "1.0.0",
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
@@ -383,7 +391,7 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 		{
 			name: "CheckPurl error returns ComponentNotFound",
 			input: Component{
-				Purl:        "pkg:npm/error-pkg",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/error-pkg"},
 				Requirement: "1.0.0",
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
@@ -398,7 +406,7 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 		{
 			name: "GetComponent error returns VersionNotFound",
 			input: Component{
-				Purl:        "pkg:npm/lodash",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/lodash"},
 				Requirement: ">=99.0.0",
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
@@ -413,7 +421,7 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 		{
 			name: "Negative CheckPurl count returns ComponentNotFound",
 			input: Component{
-				Purl:        "pkg:npm/negative-count",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/negative-count"},
 				Requirement: "1.0.0",
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
@@ -428,7 +436,7 @@ func TestComponentVersionWorker_ComponentResolverInvalid(t *testing.T) {
 		{
 			name: "GetComponent returns empty response preserves empty version",
 			input: Component{
-				Purl:        "pkg:npm/empty-response",
+				PurlInfo:    PurlInfo{Purl: "pkg:npm/empty-response"},
 				Requirement: "^1.0.0",
 				Status:      domain.ComponentStatus{StatusCode: domain.Success},
 			},
