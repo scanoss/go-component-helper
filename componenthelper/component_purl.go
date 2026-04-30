@@ -28,7 +28,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/scanoss/go-models/pkg/types"
 	purlhelper "github.com/scanoss/go-purl-helper/pkg"
 	"go.uber.org/zap"
 )
@@ -69,16 +68,6 @@ func buildPurlInfo(s *zap.SugaredLogger, purlString string) (PurlInfo, string, e
 		PurlQualifiers: qualifiers,
 		PurlSubpath:    packageURL.Subpath,
 	}, packageURL.Version, nil
-}
-
-// buildSourcePurlString assembles a PURL string from the raw source-mine
-// fields returned by the source-PURL lookup. The SourcePurlName already
-// carries the full namespace/name path (matching the convention of the
-// projects.purl_name column), so it is used as-is — SourceVendor is
-// retained on the response for display only and is not part of the PURL.
-// Encoding and lowercasing rules are delegated to the downstream parser.
-func buildSourcePurlString(src types.SourcePurl) string {
-	return fmt.Sprintf("pkg:%s/%s", src.PurlType, src.SourcePurlName)
 }
 
 // ComponentNameFromString take an input Purl string and returns the component name only.

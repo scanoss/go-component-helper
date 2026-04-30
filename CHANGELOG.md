@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added source PURL resolution to the component worker: when a component resolves successfully, the worker exposes the upstream source-mine PURL on `Component.SourcePurl`
 - Added `SourcePurl` and `PurlInfo` types; `PurlInfo` is embedded on `Component` to expose the parsed PURL components (`Name`, `URL`, `PurlType`, `PurlName`, `PurlNamespace`, `PurlQualifiers`, `PurlSubpath`)
 - Added `buildPurlInfo` helper to decompose a PURL string into its parsed parts
+- Added projects-table fallback for unresolved components: when `GetComponent` returns `ErrComponentNotFound` and a row exists in the projects table, the worker rebuilds `Component.PurlInfo` from the canonical `purl_name`/`purl_type` and promotes the status from `ComponentNotFound` to `VersionNotFound`
+- Added `scanossResolver` adapter that bundles `*services.ComponentService` and `*services.ProjectService` into a single `componentResolver`
 
 ### Changed
 - Refactored `sanitiseComponents` to delegate PURL parsing to the new `buildPurlInfo` helper
+- Source PURL is now derived from the project row's `Source*` fields via a single `GetProject` call; the `componentResolver` interface drops `GetSourcePurl` in favor of `GetProject`
+- Upgraded `scanoss/go-models` to v0.10.0
 
 ## [0.6.0] - 2026-04-01
 ### Added

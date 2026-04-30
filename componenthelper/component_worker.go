@@ -26,6 +26,7 @@ package componenthelper
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/scanoss/go-grpc-helper/pkg/grpc/domain"
@@ -38,10 +39,12 @@ import (
 type componentResolver interface {
 	GetComponent(ctx context.Context, req types.ComponentRequest) (types.ComponentResponse, error)
 	GetComponentVersions(ctx context.Context, purl string) (types.ComponentVersionsResponse, error)
-	// GetSourcePurl returns the raw source-mine data used to build a source
-	// PURL for the given component PURL. Implementations should return
-	// services.ErrSourcePurlNotFound when no source PURL exists.
-	GetSourcePurl(ctx context.Context, purl string) (types.SourcePurl, error)
+	// GetProject returns the projects-table row for the given PURL. The same
+	// row drives two enrichments: a PurlInfo fallback when the component
+	// lookup fails, and the SourcePurl built from the linked source-mine
+	// fields when the component resolves successfully. Implementations
+	// should return services.ErrProjectNotFound when no project exists.
+	GetProject(ctx context.Context, purl string) (types.Project, error)
 }
 
 // componentVersionWorker processes components from the jobs channel, resolving each component's
@@ -85,54 +88,77 @@ func componentVersionWorker(ctx context.Context, s *zap.SugaredLogger, resolver 
 			}
 		}
 
+		// Single project lookup: drives the PurlInfo fallback when the
+		// component lookup fails AND the SourcePurl when it succeeds.
+		project, errProj := resolver.GetProject(ctx, j.Purl)
+		if errProj != nil && !errors.Is(errProj, services.ErrProjectNotFound) {
+			s.Warnf("Failed to get project for %s: %v", j.Purl, errProj)
+		}
+
+		// Fallback: when the component wasn't resolved, enrich PurlInfo from projects
+		// and upgrade status to VersionNotFound
+		if processedComponent.Status.StatusCode == domain.ComponentNotFound && errProj == nil {
+			enrichPurlInfoFromProject(s, &processedComponent, project)
+		}
+
 		// Retrieve component versions on success or when version is not found
-		if !errors.Is(err, services.ErrComponentNotFound) && processedComponent.Status.StatusCode != domain.ComponentNotFound {
-			componentVersions, errCompVersion := resolver.GetComponentVersions(ctx, j.Purl)
+		if processedComponent.Status.StatusCode != domain.ComponentNotFound {
+			componentVersions, errCompVersion := resolver.GetComponentVersions(ctx, processedComponent.Purl)
 			if errCompVersion != nil {
-				s.Errorf("Failed to get component versions: %s, %v", j.Purl, errCompVersion)
+				s.Errorf("Failed to get component versions: %s, %v", processedComponent.Purl, errCompVersion)
 			} else {
 				processedComponent.Versions = componentVersions.Versions
 			}
 		}
 
-		// Resolve the source PURL (e.g. upstream source-mine equivalent)
-		// only when the component itself was resolved successfully. A missing
-		// source PURL is normal and should not affect the component status.
-		if processedComponent.Status.StatusCode == domain.Success {
-			sourcePurl, errSrc := resolver.GetSourcePurl(ctx, j.Purl)
-			switch {
-			case errors.Is(errSrc, services.ErrSourcePurlNotFound):
-				// No source PURL for this component — leave nil.
-			case errSrc != nil:
-				s.Warnf("Failed to get source PURL for %s: %v", j.Purl, errSrc)
-			default:
-				sourcePurlString := buildSourcePurlString(sourcePurl)
-				sourceInfo, _, errBuild := buildPurlInfo(s, sourcePurlString)
-				switch {
-				case errBuild != nil:
-					s.Warnf("Failed to parse source PURL %q for %s: %v", sourcePurlString, j.Purl, errBuild)
-					processedComponent.SourcePurl = &SourcePurl{
-						Status: domain.ComponentStatus{
-							Message:    "Invalid Source Purl",
-							StatusCode: domain.InvalidPurl,
-						},
-					}
-				case sourceInfo.PurlType == processedComponent.PurlType && sourceInfo.Name == processedComponent.Name:
-					// Source PURL resolves to the same component — leave nil.
-				default:
-					if sourcePurl.RepositoryURL != "" {
-						sourceInfo.URL = sourcePurl.RepositoryURL
-					}
-					processedComponent.SourcePurl = &SourcePurl{
-						PurlInfo: sourceInfo,
-						Status: domain.ComponentStatus{
-							StatusCode: domain.Success,
-						},
-					}
-				}
-			}
+		if processedComponent.Status.StatusCode == domain.Success && errProj == nil {
+			processedComponent.SourcePurl = buildSourcePurlFromProject(s, project, j.Purl)
 		}
 
 		results <- processedComponent
+	}
+}
+
+// enrichPurlInfoFromProject rebuilds the component's PurlInfo from the
+// project row's canonical purl_name/purl_type and promotes the status from
+// ComponentNotFound to VersionNotFound. On parse failure the status is left
+// as ComponentNotFound and the existing PurlInfo is preserved.
+func enrichPurlInfoFromProject(s *zap.SugaredLogger, c *Component, project types.Project) {
+	projectPurl := fmt.Sprintf("pkg:%s/%s", project.PurlType, project.PurlName)
+	purlInfo, _, errBuild := buildPurlInfo(s, projectPurl)
+	if errBuild != nil {
+		s.Warnf("Failed to parse project PURL %q for %s: %v", projectPurl, c.Purl, errBuild)
+		return
+	}
+	c.PurlInfo = purlInfo
+	c.Status.StatusCode = domain.VersionNotFound
+	c.Status.Message = "Component version not found"
+}
+
+// buildSourcePurlFromProject builds a SourcePurl from the project's linked
+// source-mine fields. Returns nil when no source is linked. On parse failure
+// returns a SourcePurl with a ComponentNotFound status so the caller can
+// surface that the source data was malformed.
+func buildSourcePurlFromProject(s *zap.SugaredLogger, project types.Project, parentPurl string) *SourcePurl {
+	if project.SourceMineID == nil || project.SourcePurlName == nil {
+		return nil
+	}
+	sourcePurlString := fmt.Sprintf("pkg:%s/%s", project.SourcePurlType, *project.SourcePurlName)
+	sourceInfo, _, errBuild := buildPurlInfo(s, sourcePurlString)
+	if errBuild != nil {
+		s.Warnf("Failed to parse source PURL %q for %s: %v", sourcePurlString, parentPurl, errBuild)
+		return &SourcePurl{
+			Status: domain.ComponentStatus{
+				Message:    "Source component not found",
+				StatusCode: domain.ComponentNotFound,
+			},
+		}
+	}
+	if project.SourceRepositoryURL != "" {
+		sourceInfo.URL = project.SourceRepositoryURL
+	}
+	return &SourcePurl{
+		PurlInfo: sourceInfo,
+		Status:   domain.ComponentStatus{StatusCode: domain.Success},
 	}
 }
