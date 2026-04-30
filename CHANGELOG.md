@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactored `sanitiseComponents` to delegate PURL parsing to the new `buildPurlInfo` helper
 - Source PURL is now derived from the project row's `Source*` fields via a single `GetProject` call; the `componentResolver` interface drops `GetSourcePurl` in favor of `GetProject`
-- Upgraded `scanoss/go-models` to v0.10.0
+- Updated dependencies to their latest versions
 
 ## [0.6.0] - 2026-04-01
 ### Added
